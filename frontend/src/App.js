@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const isLocalFrontend =
+  typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const API_URL = (process.env.REACT_APP_API_URL || (isLocalFrontend ? "http://localhost:5000" : "")).replace(/\/+$/, "");
+const API_CONFIG_ERROR = API_URL
+  ? ""
+  : "Sharp is missing REACT_APP_API_URL. In Vercel, set it to your current Render backend URL, then redeploy the frontend.";
 
 const css = `
 *{box-sizing:border-box}
@@ -10,6 +15,7 @@ body{margin:0;background:#f8f6ff;color:#1c1233;font-family:Inter,-apple-system,B
 button,input,select,textarea{font:inherit}
 button{border:0;border-radius:12px;cursor:pointer;font-weight:800;min-height:40px;padding:0 12px;transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
 button:hover{transform:translateY(-1px)}
+button:disabled{cursor:not-allowed;opacity:.55;transform:none}
 input,select,textarea{background:#fff;border:1px solid #ded4fb;border-radius:12px;color:#1c1233;min-height:42px;outline:none;padding:0 12px;width:100%}
 textarea{min-height:78px;padding-top:10px;resize:vertical}
 input:focus,select:focus,textarea:focus{border-color:#5b16ef;box-shadow:0 0 0 3px rgba(91,22,239,.14)}
@@ -171,8 +177,15 @@ function App() {
   const days = view === "month" ? 42 : 7;
   const dates = useMemo(() => Array.from({ length: days }, (_, i) => addDays(start, i)), [start, days]);
 
+  function ensureApiConfigured() {
+    if (!API_CONFIG_ERROR) return true;
+    setError(API_CONFIG_ERROR);
+    return false;
+  }
+
   async function load() {
     if (!token) return;
+    if (!ensureApiConfigured()) return;
     try {
       const [me, itemRes, statRes, insightRes] = await Promise.all([
         api.get("/me"),
@@ -218,6 +231,7 @@ function App() {
   }
 
   async function submitAuth() {
+    if (!ensureApiConfigured()) return;
     try {
       const endpoint = authMode === "login" ? "/auth/login" : "/auth/signup";
       const res = await axios.post(`${API_URL}${endpoint}`, auth);
@@ -256,6 +270,7 @@ function App() {
   }
 
   async function saveItem() {
+    if (!ensureApiConfigured()) return;
     if (!form.title.trim()) return setError("Add a title first.");
     const payload = form.kind === "task" ? { ...form, endTime: "", recurrence: "none" } : form;
     if (editingId) await api.put(`/items/${editingId}`, payload);
@@ -265,6 +280,7 @@ function App() {
   }
 
   async function deleteItem() {
+    if (!ensureApiConfigured()) return;
     if (!editingId) return;
     await api.delete(`/items/${editingId}`);
     setModal(false);
@@ -272,11 +288,13 @@ function App() {
   }
 
   async function toggle(item) {
+    if (!ensureApiConfigured()) return;
     await api.post(`/items/${item.id}/toggle`, { date: item.date, start });
     await load();
   }
 
   async function moveItem(id, date) {
+    if (!ensureApiConfigured()) return;
     const item = items.find((entry) => entry.id === id);
     if (!item) return;
     await api.put(`/items/${id}`, { ...item, startDate: date });
@@ -286,6 +304,7 @@ function App() {
 
   async function sendMessage() {
     if (!message.trim()) return;
+    if (!ensureApiConfigured()) return;
     const text = message;
     setMessage("");
     try {
@@ -298,12 +317,14 @@ function App() {
   }
 
   async function saveSettings(next) {
+    if (!ensureApiConfigured()) return;
     setSettings(next);
     if (next.calendarView) setView(next.calendarView);
     await api.put("/settings", next);
   }
 
   async function saveProfile() {
+    if (!ensureApiConfigured()) return;
     const res = await api.put("/profile", { name: profile.displayName || user.name, profile });
     setUser(res.data.user);
     setProfile(res.data.user.profile || profile);
@@ -312,6 +333,7 @@ function App() {
   }
 
   async function deleteAccount() {
+    if (!ensureApiConfigured()) return;
     const confirmed = window.confirm("Delete your Sharp account and all tasks/habits permanently?");
     if (!confirmed) return;
     await api.delete("/account");
@@ -350,11 +372,12 @@ function App() {
           <section className="card">
             <div className="brand"><div className="brand-mark">S</div><h1>SHARP</h1></div>
             <p className="muted">Use your account to keep tasks, habits, and preferences synced with MongoDB.</p>
+            {API_CONFIG_ERROR && <p className="notice error">{API_CONFIG_ERROR}</p>}
             {error && <p className="notice error">{error}</p>}
             {authMode === "signup" && <label>Name<input value={auth.name} onChange={(e) => setAuth({ ...auth, name: e.target.value })} /></label>}
             <label>Email<input value={auth.email} onChange={(e) => setAuth({ ...auth, email: e.target.value })} /></label>
             <label>Password<input type="password" value={auth.password} onChange={(e) => setAuth({ ...auth, password: e.target.value })} /></label>
-            <div className="actions"><button className="primary" onClick={submitAuth}>{authMode === "login" ? "Log in" : "Sign up"}</button><button className="ghost" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>{authMode === "login" ? "Create account" : "Have account"}</button></div>
+            <div className="actions"><button className="primary" disabled={Boolean(API_CONFIG_ERROR)} onClick={submitAuth}>{authMode === "login" ? "Log in" : "Sign up"}</button><button className="ghost" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>{authMode === "login" ? "Create account" : "Have account"}</button></div>
           </section>
         </main>
       </>

@@ -10,9 +10,29 @@ const OpenAI = require("openai");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+const CORS_ORIGINS = process.env.CORS_ORIGINS || "";
 const JWT_SECRET = process.env.JWT_SECRET || "sharp-dev-secret-change-me";
 
-app.use(cors({ origin: "*" }));
+function parseOrigins(value) {
+  return String(value || "")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+}
+
+const allowedOrigins = new Set([...parseOrigins(FRONTEND_URL), ...parseOrigins(CORS_ORIGINS)]);
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has("*") || allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`CORS blocked request from ${origin}. Add it to FRONTEND_URL or CORS_ORIGINS.`);
+    return callback(null, false);
+  },
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json());
 
 const openai = new OpenAI({
@@ -24,10 +44,16 @@ const openai = new OpenAI({
   },
 });
 
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((error) => console.error("MongoDB connection failed:", error.message));
+mongoose.set("bufferCommands", false);
+
+if (!process.env.MONGODB_URI) {
+  console.error("MONGODB_URI is missing. Add it in Render Environment Variables.");
+} else {
+  mongoose
+    .connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 })
+    .then(() => console.log("MongoDB connected"))
+    .catch((error) => console.error("MongoDB connection failed:", error.message));
+}
 
 const settingsSchema = new mongoose.Schema(
   {
@@ -232,8 +258,16 @@ function publicUser(user) {
   };
 }
 
+function requireDatabase(req, res, next) {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ error: "Database unavailable. Check MONGODB_URI on Render, then redeploy the backend." });
+  }
+  next();
+}
+
 async function requireUser(req, res, next) {
   try {
+    if (mongoose.connection.readyState !== 1) return requireDatabase(req, res, next);
     const token = (req.headers.authorization || "").replace("Bearer ", "");
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.id);
@@ -487,10 +521,14 @@ async function aiCommand(message) {
 }
 
 app.get("/", (req, res) => {
-  res.json({ message: "Sharp API running", mongoConnected: mongoose.connection.readyState === 1 });
+  res.json({
+    message: "Sharp API running",
+    mongoConnected: mongoose.connection.readyState === 1,
+    corsOrigins: Array.from(allowedOrigins),
+  });
 });
 
-app.post("/auth/signup", async (req, res) => {
+app.post("/auth/signup", requireDatabase, async (req, res) => {
   try {
     const name = String(req.body.name || "").trim();
     const email = String(req.body.email || "").trim().toLowerCase();
@@ -506,7 +544,7 @@ app.post("/auth/signup", async (req, res) => {
   }
 });
 
-app.post("/auth/login", async (req, res) => {
+app.post("/auth/login", requireDatabase, async (req, res) => {
   const email = String(req.body.email || "").trim().toLowerCase();
   const password = String(req.body.password || "");
   const user = await User.findOne({ email });
