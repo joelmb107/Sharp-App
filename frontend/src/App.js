@@ -423,7 +423,7 @@ function App() {
             <div className="calendar-head">
               <h2>{monthTitle(focusDate, language)}</h2>
               <div className="actions">
-                <div className="view-toggle"><button className={view === "week" ? "active" : ""} onClick={() => setView("week")}>{t("week")}</button><button className={view === "month" ? "active" : ""} onClick={() => setView("month")}>{t("month")}</button></div>
+                <div className="view-toggle"><button className={view === "month" ? "active" : ""} onClick={() => setView("month")}>{t("month")}</button><button className={view === "week" ? "active" : ""} onClick={() => setView("week")}>{t("week")}</button></div>
                 <button className="ghost" onClick={() => setFocusDate(addDays(focusDate, view === "month" ? -30 : -7))}>{t("prev")}</button>
                 <button className="ghost" onClick={() => setFocusDate(addDays(focusDate, view === "month" ? 30 : 7))}>{t("next")}</button>
               </div>
