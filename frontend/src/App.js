@@ -62,14 +62,14 @@ const translations = {
     completed: "Completed", currentStreak: "Current streak", yearProgress: "Year progress", daysLeft: "days left before the year ends",
   },
   fr: {
-    calendar: "Calendrier", tracking: "Suivi", profile: "Profil", settings: "Reglages", close: "Fermer", logout: "Deconnexion", new: "Nouveau", today: "Aujourd'hui",
+    calendar: "Calendrier", tracking: "Suivi", profile: "Profil", settings: "Réglages", close: "Fermer", logout: "Déconnexion", new: "Nouveau", today: "Aujourd'hui",
     month: "Mois", week: "Semaine", prev: "Prec.", next: "Suiv.", sharpAi: "IA Sharp", ask: "Demander a Sharp...", send: "Envoyer", hide: "Masquer", show: "Afficher",
     createTitle: "Creer une nouvelle tache ou habitude", task: "Tache", habit: "Habitude", title: "Titre", date: "Date", optionalTime: "Heure optionnelle",
-    startTime: "Debut", endTime: "Fin", repeat: "Repetition", color: "Couleur", reminder: "Rappel", minutesBefore: "Minutes avant",
+    startTime: "Début", endTime: "Fin", repeat: "Répétition", color: "Couleur", reminder: "Rappel", minutesBefore: "Minutes avant",
     notes: "Notes", create: "Creer", save: "Enregistrer", cancel: "Annuler", delete: "Supprimer", theme: "Theme", language: "Langue",
     defaultView: "Vue par defaut", reminders: "Rappels", allowNotifications: "Autoriser les notifications", editProfile: "Modifier le profil",
     goal: "Objectif", displayName: "Nom affiche", avatarColor: "Couleur avatar", saveProfile: "Enregistrer", bestStreak: "Meilleure serie",
-    completed: "Termines", currentStreak: "Serie actuelle", yearProgress: "Progression annuelle", daysLeft: "jours avant la fin de l'annee",
+    completed: "Terminés", currentStreak: "Série actuelle", yearProgress: "Progression annuelle", daysLeft: "jours avant la fin de l'année",
   },
   es: {
     calendar: "Calendario", tracking: "Progreso", profile: "Perfil", settings: "Ajustes", close: "Cerrar", logout: "Salir", new: "Nuevo", today: "Hoy",
